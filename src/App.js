@@ -8,6 +8,19 @@ import { Connection,  actions } from '@metaplex/js';
 import { sendAndConfirmTransaction } from '@solana/web3.js';
 
 
+require('@solana/wallet-adapter-react-ui/styles.css');
+
+const wallets = [
+  /* view list of available wallets at https://github.com/solana-labs/wallet-adapter#wallets */
+  new PhantomWalletAdapter()
+]
+
+function App() {
+  const wallet = useWallet();
+  const adapter = wallet.adapter;
+  const connection = new Connection('testnet');
+
+
   async function click() {    
 
     const TOKEN_AMOUNT = 2;
@@ -78,3 +91,38 @@ import { sendAndConfirmTransaction } from '@solana/web3.js';
       createVault()
     }
   }
+
+  // Get wallet balance in LAMPORTS
+  
+  
+
+  if (!wallet.connected) {
+    /* If the user's wallet is not connected, display connect wallet button. */
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop:'100px' }}>
+        <WalletMultiButton />
+      </div>
+    )
+  } else {
+    return (
+      <div className="App">
+        <div>          
+          <button id="metadata" onClick={click} type="button">Get metadata</button>
+        </div>
+      </div>
+    );
+  }
+}
+
+/* wallet configuration as specified here: https://github.com/solana-labs/wallet-adapter#setup */
+const AppWithProvider = () => (
+  <ConnectionProvider endpoint="https://api.testnet.solana.com">
+    <WalletProvider wallets={wallets} autoConnect>
+      <WalletModalProvider>
+        <App />
+      </WalletModalProvider>
+    </WalletProvider>
+  </ConnectionProvider>
+)
+
+export default AppWithProvider;
