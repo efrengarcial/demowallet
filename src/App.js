@@ -1,11 +1,16 @@
 import './App.css';
 import BN from 'bn.js';
-import { Transaction } from '@metaplex-foundation/mpl-core';
 import { getPhantomWallet as PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { useWallet, WalletProvider, ConnectionProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection,  actions } from '@metaplex/js';
-import { sendAndConfirmTransaction } from '@solana/web3.js';
+import { Connection,  actions, programs, NodeWallet, transactions } from '@metaplex/js';
+import { PublicKey, Keypair } from '@solana/web3.js';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID, u64 } from '@solana/spl-token';
+import { Account, Transaction } from '@metaplex-foundation/mpl-core';
+
+const { vault: { Vault } } = programs
+const { CreateAssociatedTokenAccount } = transactions
+const { sendTransaction } = actions
 
 
 require('@solana/wallet-adapter-react-ui/styles.css');
@@ -15,88 +20,60 @@ const wallets = [
   new PhantomWalletAdapter()
 ]
 
+
 function App() {
   const wallet = useWallet();
-  const adapter = wallet.adapter;
-  const connection = new Connection('testnet');
+  console.log(wallet)
+  //const adapter = wallet.adapter;
+ const connection = new Connection('devnet');  
+
+  async function click() {        
+    
+    const tx = async () => {
+      //const wallet = new NodeWallet(myWallet);
+      const destPK = new PublicKey(
+        'GCw7dz9eQhLJ3RS98sFq99vBc9SUEm85eH5tVpfCKK3y'
+      );
+      const mint = new PublicKey('G527jgwh3ktGuhMMmEaWmugRzjD2stKnVGqBhh9Qy2C8');
+      const destination =  destPK;
 
 
-  async function click() {    
+      const originAta = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        mint,
+        wallet.publicKey,
+      );
 
-    const TOKEN_AMOUNT = 2;
+      console.log('originAta:', originAta)
 
-    const getBalance = async () => {
-      console.log(adapter)
-      const balance = await connection.getBalance(adapter.publicKey);
-      console.log(balance)
-    }
-    const   createVault = async () => {
-      const externalPriceAccountData = await  actions.createExternalPriceAccount({
-        connection,
-        wallet,
-      });
-      console.log(externalPriceAccountData)
-      await connection.confirmTransaction(externalPriceAccountData.txId, 'finalized');
-
-      const vault = await actions.createVault({
-        connection,
-        wallet,
-        ...externalPriceAccountData,
-      });
-      console.log(vault)
-
-      const testNfts = [];
-
-      for (let i = 0; i < TOKEN_AMOUNT; i++) {
-        const {
-          mint,
-          recipient: tokenAccount,
-          createAssociatedTokenAccountTx,
-          createMintTx,
-          mintToTx,
-        } = await actions.prepareTokenAccountAndMintTxs(connection, wallet.publicKey);
-  
-        await sendAndConfirmTransaction(
-          connection,
-          Transaction.fromCombined([createMintTx, createAssociatedTokenAccountTx, mintToTx]),
-          [ mint, wallet.publicKey],
-        );
-  
-        testNfts.push({
-          tokenAccount,
-          tokenMint: mint.publicKey,
-          amount: new BN(1),
-        });
-      }
-  
-
-      const { safetyDepositTokenStores } = await actions.addTokensToVault({
-        connection,
-        wallet,
-        vault,
-        nfts: testNfts,
-      });
-      console.log(safetyDepositTokenStores)
+      const send = await actions.sendToken({
+        connection: connection, 
+        wallet: wallet, 
+        source: originAta, 
+        destination:  destPK, 
+        mint: mint, 
+        amount: 1
+      }); 
 
       
+      console.log(send)
+
+
+    };
   
-      /*const vault = await Vault.load(connection, vaultResponse.vault);
-      console.log(vault) */
-    
-    }
   
-  
-    if (wallet.connected) {
-      getBalance()
+    /*if (wallet.connected) {     
       createVault()
-    }
+    }*/
+    tx()
   }
 
   // Get wallet balance in LAMPORTS
   
   
 
-  if (!wallet.connected) {
+  if (false) {
     /* If the user's wallet is not connected, display connect wallet button. */
     return (
       <div style={{ display: 'flex', justifyContent: 'center', marginTop:'100px' }}>
