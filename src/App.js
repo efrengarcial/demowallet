@@ -29,44 +29,53 @@ function App() {
 
   async function click() {        
     
-    const tx = async () => {
-      //const wallet = new NodeWallet(myWallet);
-      const destPK = new PublicKey(
-        'GCw7dz9eQhLJ3RS98sFq99vBc9SUEm85eH5tVpfCKK3y'
-      );
-      const mint = new PublicKey('G527jgwh3ktGuhMMmEaWmugRzjD2stKnVGqBhh9Qy2C8');
-      const destination =  destPK;
+   
+    const   createVault = async () => {
+     
+      const externalPriceAccountData = await  actions.createExternalPriceAccount({
+        connection,
+        wallet,
+      });
+      console.log('externalPriceAccountData:', externalPriceAccountData)
+      await connection.confirmTransaction(externalPriceAccountData.txId, 'finalized');
 
+      const { vault } = await actions.createVault({
+        connection,
+        wallet,
+        ...externalPriceAccountData,
+      });
+      console.log("vault:",vault)
 
-      const originAta = await Token.getAssociatedTokenAddress(
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        TOKEN_PROGRAM_ID,
-        mint,
-        wallet.publicKey,
-      );
+      const testNfts = [];
+     
+      const tokenAccount = new  PublicKey('GuEbjBXcBAMJHExGkxziagijc8Da9693tEKz5rRc8tRT');
+      const tokenMint =  new  PublicKey('FyrcqnCoefSZuTRH9TqmRMBarzX6sDVniXdEwjwRLqCh');
 
-      console.log('originAta:', originAta)
+      testNfts.push({
+        tokenAccount,
+        tokenMint: tokenMint,
+        amount: new BN(1),
+      });
+      console.log('testNfts', testNfts)
 
-      const send = await actions.sendToken({
-        connection: connection, 
-        wallet: wallet, 
-        source: originAta, 
-        destination:  destPK, 
-        mint: mint, 
-        amount: 1
-      }); 
+      const vaultAuthority = await Vault.getPDA(vault);
+      console.log("vaultAuthority",vaultAuthority)
+  
+      const { safetyDepositTokenStores } = await actions.addTokensToVault({
+        connection,
+        wallet,
+        vault,
+        nfts: testNfts,
+      });
+      console.log(safetyDepositTokenStores)
 
-      
-      console.log(send)
-
-
-    };
+     };  
   
   
     /*if (wallet.connected) {     
       createVault()
     }*/
-    tx()
+    createVault()
   }
 
   // Get wallet balance in LAMPORTS
